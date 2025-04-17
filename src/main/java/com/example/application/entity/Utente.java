@@ -10,6 +10,8 @@ import com.vaadin.flow.component.template.Id;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
@@ -31,8 +33,9 @@ import lombok.Setter;
 public class Utente {
 
     @jakarta.persistence.Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
-    @NotNull(message = "Id cannot be null")
+    // @NotNull(message = "Id cannot be null")
     private Integer id;
 
     @Column(name = "name")

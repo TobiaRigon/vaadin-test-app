@@ -6,6 +6,8 @@ import java.util.Set;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
@@ -26,7 +28,9 @@ public class Pc {
 
     @Id
     @Column(name = "id")
-    @NotNull(message = "Id cannot be null")
+    // @NotNull(message = "Id cannot be null")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+
     private Integer id;
 
     @Column(name = "name")
