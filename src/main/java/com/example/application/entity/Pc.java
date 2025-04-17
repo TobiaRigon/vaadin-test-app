@@ -1,10 +1,13 @@
 package com.example.application.entity;
 
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -41,5 +44,12 @@ public class Pc {
     public String getFullName() {
         return name + " " + brand;
     }
+
+    /**
+     * Un PC può essere assegnato a più utenti
+     * mappedBy = "pcList" perché è il nome del campo nella classe Utente
+     */
+    @ManyToMany(mappedBy = "pcList")
+    private Set<Utente> utenteList = new HashSet<>();
 
 }

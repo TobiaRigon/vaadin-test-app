@@ -20,20 +20,19 @@ import com.vaadin.flow.router.Route;
 @Route("")
 public class MainView extends VerticalLayout {
 
+    @Autowired
     public MainView(UtenteService utenteService, PcService pcService) {
+        UtenteForm utenteForm = new UtenteForm(utenteService, pcService);
+        PcForm pcForm = new PcForm(pcService, utenteService);
+
         SplitLayout layout = new SplitLayout();
-
         layout.setSizeFull();
-        layout.setSplitterPosition(50); // 50%/50%
-
-        // Componenti modulari
-        UtenteForm utenteForm = new UtenteForm(utenteService);
-        PcForm pcForm = new PcForm(pcService);
+        layout.setSplitterPosition(50);
 
         layout.addToPrimary(utenteForm);
         layout.addToSecondary(pcForm);
 
         add(layout);
-        setSizeFull(); // occupa tutto lo spazio
+        setSizeFull();
     }
 }

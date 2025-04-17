@@ -1,6 +1,8 @@
 package com.example.application.entity;
 
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.checkerframework.checker.units.qual.g;
 
@@ -8,6 +10,9 @@ import com.vaadin.flow.component.template.Id;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Past;
@@ -44,5 +49,16 @@ public class Utente {
     public String getFullName() {
         return name + " " + surname;
     }
+
+    /**
+     * Un utente può avere più PC
+     * Relazione molti-a-molti con la tabella di relazione "utente_pc"
+     */
+    @ManyToMany
+    @JoinTable(name = "utente_pc", // nome tabella di join
+            joinColumns = @JoinColumn(name = "utente_id"), // FK verso la tabella utenti
+            inverseJoinColumns = @JoinColumn(name = "pc_id") // FK verso la tabella pc
+    )
+    private Set<Pc> pcList = new HashSet<>();
 
 }
