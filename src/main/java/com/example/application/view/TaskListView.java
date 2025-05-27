@@ -4,11 +4,14 @@ import com.example.application.entity.Task;
 import com.example.application.service.TaskService;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import com.vaadin.flow.spring.annotation.UIScope;
+
+import jakarta.annotation.PostConstruct;
 
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.dialog.Dialog;
@@ -17,15 +20,21 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode;
+import com.vaadin.flow.router.BeforeEnterObserver;
 
-@UIScope
 @Component
 @Route(value = "task-list", layout = MainLayout.class)
 @PageTitle("Elenco Task")
-public class TaskListView extends VerticalLayout {
+
+public class TaskListView extends VerticalLayout implements BeforeEnterObserver {
 
     private final Grid<Task> grid = new Grid<>(Task.class, false);
     private final TaskService taskService;
+
+    @Override
+    public void beforeEnter(BeforeEnterEvent event) {
+        refreshGrid(); // viene chiamato ogni volta che entri nella vista
+    }
 
     @Autowired
     public TaskListView(TaskService taskService) {
@@ -131,4 +140,5 @@ public class TaskListView extends VerticalLayout {
             case BASSA -> "success";
         };
     }
+
 }

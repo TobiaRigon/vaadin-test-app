@@ -1,6 +1,8 @@
 package com.example.application.service;
 
 import com.example.application.entity.Task;
+
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -9,6 +11,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Service
+@Scope("application")
 public class TaskService {
 
     private final List<Task> tasks = new ArrayList<>();
