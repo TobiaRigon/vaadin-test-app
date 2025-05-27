@@ -24,6 +24,7 @@ public class Task {
 
     public enum Status {
         DA_FARE("Da fare"),
+        IN_SVILUPPO("In Sviluppo"),
         PROGRAMMATO("Programmato"),
         STANDBY("Standby"),
         FATTO("Fatto");

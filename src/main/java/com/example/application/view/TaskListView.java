@@ -238,6 +238,7 @@ public class TaskListView extends VerticalLayout implements BeforeEnterObserver 
     private String getStatusTheme(Task.Status status) {
         return switch (status) {
             case DA_FARE -> "primary";
+            case IN_SVILUPPO -> "warning";
             case PROGRAMMATO -> "contrast";
             case STANDBY -> "tertiary";
             case FATTO -> "success";
