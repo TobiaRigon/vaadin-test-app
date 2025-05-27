@@ -4,6 +4,7 @@ import com.example.application.entity.Task;
 import com.example.application.service.TaskService;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
@@ -16,6 +17,7 @@ import jakarta.annotation.PostConstruct;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -41,15 +43,39 @@ public class TaskListView extends VerticalLayout implements BeforeEnterObserver 
         this.taskService = taskService;
         setSizeFull();
 
-        // ✅ Pulsante "+" sopra la griglia
+        // Filtro per titolo
+        TextField titleFilter = new TextField();
+        titleFilter.setPlaceholder("Filtra per titolo");
+        titleFilter.setClearButtonVisible(true);
+
+        // Filtro per stato
+        ComboBox<Task.Status> statusFilter = new ComboBox<>();
+        statusFilter.setItems(Task.Status.values());
+        statusFilter.setPlaceholder("Stato");
+
+        // Filtro per priorità
+        ComboBox<Task.Priority> priorityFilter = new ComboBox<>();
+        priorityFilter.setItems(Task.Priority.values());
+        priorityFilter.setPlaceholder("Priorità");
+
+        // Pulsante "+"
         Button addButton = new Button(new Icon(VaadinIcon.PLUS));
         addButton.getElement().setAttribute("theme", "primary icon");
         addButton.addClickListener(e -> openAddDialog());
 
-        HorizontalLayout topBar = new HorizontalLayout(addButton);
-        topBar.setWidthFull();
-        topBar.setJustifyContentMode(JustifyContentMode.END);
-        add(topBar);
+        // Layout filtri + bottone
+        HorizontalLayout filterBar = new HorizontalLayout(titleFilter, statusFilter, priorityFilter, addButton);
+        filterBar.setWidthFull();
+        filterBar.setAlignItems(Alignment.END);
+        add(filterBar);
+
+        // Listener per filtrare
+        titleFilter.addValueChangeListener(
+                e -> refreshGrid(titleFilter.getValue(), statusFilter.getValue(), priorityFilter.getValue()));
+        statusFilter.addValueChangeListener(
+                e -> refreshGrid(titleFilter.getValue(), statusFilter.getValue(), priorityFilter.getValue()));
+        priorityFilter.addValueChangeListener(
+                e -> refreshGrid(titleFilter.getValue(), statusFilter.getValue(), priorityFilter.getValue()));
 
         // ✅ Griglia sotto
         configureGrid();
@@ -133,6 +159,16 @@ public class TaskListView extends VerticalLayout implements BeforeEnterObserver 
 
     private void refreshGrid() {
         grid.setItems(taskService.findAll());
+    }
+
+    private void refreshGrid(String title, Task.Status status, Task.Priority priority) {
+        grid.setItems(
+                taskService.findAll().stream()
+                        .filter(task -> title == null || title.isEmpty()
+                                || task.getName().toLowerCase().contains(title.toLowerCase()))
+                        .filter(task -> status == null || task.getStatus() == status)
+                        .filter(task -> priority == null || task.getPriority() == priority)
+                        .toList());
     }
 
     private String getStatusTheme(Task.Status status) {
