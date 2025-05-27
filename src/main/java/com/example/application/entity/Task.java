@@ -51,8 +51,8 @@ public class Task {
                 .status(Status.DA_FARE)
                 .priority(Priority.MEDIA)
                 .creationDate(LocalDate.now())
-                .scheduledDate(LocalDate.now())
-                .dueDate(LocalDate.now().plusDays(3))
+                .scheduledDate(null) // può essere null
+                .dueDate(null) // può essere null
                 .build();
     }
 
