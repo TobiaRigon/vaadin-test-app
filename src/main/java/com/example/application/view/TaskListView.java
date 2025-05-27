@@ -87,14 +87,46 @@ public class TaskListView extends VerticalLayout implements BeforeEnterObserver 
         addButton.getElement().setAttribute("theme", "primary icon");
         addButton.addClickListener(e -> openAddDialog());
 
-        // Layout Filtri Data
-        HorizontalLayout dateFilters = new HorizontalLayout(
-                createdFrom, createdTo,
-                scheduledFrom, scheduledTo,
-                dueFrom, dueTo);
-        dateFilters.setWidthFull();
-        dateFilters.setAlignItems(Alignment.END);
-        add(dateFilters);
+        // Rendi i DatePicker clearable
+        createdFrom.setClearButtonVisible(true);
+        createdTo.setClearButtonVisible(true);
+        scheduledFrom.setClearButtonVisible(true);
+        scheduledTo.setClearButtonVisible(true);
+        dueFrom.setClearButtonVisible(true);
+        dueTo.setClearButtonVisible(true);
+
+        // Bottone toggle
+        Button toggleDateFilters = new Button("Filtri data");
+        toggleDateFilters.setIcon(new Icon(VaadinIcon.CALENDAR_CLOCK));
+        toggleDateFilters.getElement().setAttribute("theme", "tertiary");
+
+        // Layout colonna per ogni blocco data
+        VerticalLayout creationDateFilters = new VerticalLayout(createdFrom, createdTo);
+        VerticalLayout scheduledDateFilters = new VerticalLayout(scheduledFrom, scheduledTo);
+        VerticalLayout dueDateFilters = new VerticalLayout(dueFrom, dueTo);
+
+        // Allineamento più pulito (opzionale)
+        creationDateFilters.setPadding(false);
+        creationDateFilters.setSpacing(false);
+
+        scheduledDateFilters.setPadding(false);
+        scheduledDateFilters.setSpacing(false);
+
+        dueDateFilters.setPadding(false);
+        dueDateFilters.setSpacing(false);
+
+        // Contenitore affiancato
+        HorizontalLayout dateFilterBox = new HorizontalLayout(
+                creationDateFilters,
+                scheduledDateFilters,
+                dueDateFilters);
+        dateFilterBox.setPadding(false);
+        dateFilterBox.setSpacing(true);
+        dateFilterBox.setVisible(false);
+
+        toggleDateFilters.addClickListener(e -> {
+            dateFilterBox.setVisible(!dateFilterBox.isVisible());
+        });
 
         // Layout filtri + bottone
         HorizontalLayout filterBar = new HorizontalLayout(titleFilter, statusFilter, priorityFilter, addButton);
@@ -122,6 +154,8 @@ public class TaskListView extends VerticalLayout implements BeforeEnterObserver 
         // ✅ Griglia sotto
         configureGrid();
         refreshGrid();
+
+        add(toggleDateFilters, dateFilterBox);
 
         add(grid);
     }
