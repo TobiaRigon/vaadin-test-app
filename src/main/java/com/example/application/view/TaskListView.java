@@ -22,7 +22,7 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode;
 import com.vaadin.flow.router.BeforeEnterObserver;
 
-@Component
+//@Component
 @Route(value = "task-list", layout = MainLayout.class)
 @PageTitle("Elenco Task")
 
@@ -62,22 +62,33 @@ public class TaskListView extends VerticalLayout implements BeforeEnterObserver 
             Span title = new Span(task.getName());
             title.getElement().setProperty("title", task.getDescription());
             return title;
-        }).setHeader("Titolo");
+        })
+                .setComparator(Task::getName) // <-- fix critico!
+                .setHeader("Titolo")
+                .setSortable(true);
 
+        // STATO - con badge e ordinamento
         grid.addComponentColumn(task -> {
             Span badge = new Span(task.getStatus().toString());
             badge.getElement().getThemeList().add("badge " + getStatusTheme(task.getStatus()));
             return badge;
-        }).setHeader("Stato");
+        })
+                .setComparator(task -> task.getStatus().ordinal()) // ordina per enum ordinal
+                .setHeader("Stato")
+                .setSortable(true);
 
+        // PRIORITÀ - con badge e ordinamento
         grid.addComponentColumn(task -> {
             Span badge = new Span(task.getPriority().toString());
             badge.getElement().getThemeList().add("badge " + getPriorityTheme(task.getPriority()));
             return badge;
-        }).setHeader("Priorità");
+        })
+                .setComparator(task -> task.getPriority().ordinal()) // ordina per enum ordinal
+                .setHeader("Priorità")
+                .setSortable(true);
 
-        grid.addColumn(Task::getScheduledDate).setHeader("Data programmata");
-        grid.addColumn(Task::getDueDate).setHeader("Scadenza");
+        grid.addColumn(Task::getScheduledDate).setHeader("Data programmata").setSortable(true);
+        grid.addColumn(Task::getDueDate).setHeader("Scadenza").setSortable(true);
 
         grid.addComponentColumn(task -> {
             Button deleteButton = new Button(new Icon(VaadinIcon.CLOSE_SMALL));
