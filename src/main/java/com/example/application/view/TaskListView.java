@@ -9,15 +9,23 @@ import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+
+import java.util.HashMap;
+import java.util.UUID;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import com.vaadin.flow.spring.annotation.UIScope;
 
 import jakarta.annotation.PostConstruct;
+import com.vaadin.flow.component.checkbox.Checkbox;
+import java.util.Map;
+import java.util.HashMap;
 
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.icon.Icon;
@@ -30,6 +38,8 @@ import com.vaadin.flow.router.BeforeEnterObserver;
 @PageTitle("Elenco Task")
 
 public class TaskListView extends VerticalLayout implements BeforeEnterObserver {
+
+    private final Map<UUID, Task.Status> originalStatuses = new HashMap<>();
 
     private final TextField titleFilter = new TextField();
     private final ComboBox<Task.Status> statusFilter = new ComboBox<>();
@@ -90,6 +100,32 @@ public class TaskListView extends VerticalLayout implements BeforeEnterObserver 
     }
 
     private void configureGrid() {
+
+        grid.addComponentColumn(task -> {
+            Checkbox checkbox = new Checkbox(task.getStatus() == Task.Status.FATTO);
+
+            checkbox.addValueChangeListener(event -> {
+                boolean checked = event.getValue();
+
+                if (checked) {
+                    originalStatuses.put(task.getId(), task.getStatus()); // salva stato precedente
+                    task.setStatus(Task.Status.FATTO);
+                } else {
+                    Task.Status previous = originalStatuses.get(task.getId());
+                    if (previous != null && previous != Task.Status.FATTO) {
+                        task.setStatus(previous);
+                    } else {
+                        task.setStatus(Task.Status.DA_FARE); // fallback
+                    }
+                }
+
+                taskService.save(task);
+                refreshGrid(titleFilter.getValue(), statusFilter.getValue(), priorityFilter.getValue());
+            });
+
+            return checkbox;
+        }).setHeader("✔");
+
         grid.addComponentColumn(task -> {
             Span title = new Span(task.getName());
             title.getElement().setProperty("title", task.getDescription());

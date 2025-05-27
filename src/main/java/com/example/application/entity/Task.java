@@ -2,6 +2,7 @@ package com.example.application.entity;
 
 import lombok.*;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.UUID;
 
 @Data
