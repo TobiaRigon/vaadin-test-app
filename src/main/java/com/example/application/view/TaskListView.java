@@ -11,7 +11,12 @@ import org.springframework.stereotype.Component;
 import com.vaadin.flow.spring.annotation.UIScope;
 
 import com.vaadin.flow.component.html.Span;
-import com.vaadin.flow.component.shared.ThemeVariant;
+import com.vaadin.flow.component.dialog.Dialog;
+import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode;
 
 @UIScope
 @Component
@@ -20,20 +25,36 @@ import com.vaadin.flow.component.shared.ThemeVariant;
 public class TaskListView extends VerticalLayout {
 
     private final Grid<Task> grid = new Grid<>(Task.class, false);
+    private final TaskService taskService;
 
     @Autowired
     public TaskListView(TaskService taskService) {
+        this.taskService = taskService;
         setSizeFull();
+
+        // ✅ Pulsante "+" sopra la griglia
+        Button addButton = new Button(new Icon(VaadinIcon.PLUS));
+        addButton.getElement().setAttribute("theme", "primary icon");
+        addButton.addClickListener(e -> openAddDialog());
+
+        HorizontalLayout topBar = new HorizontalLayout(addButton);
+        topBar.setWidthFull();
+        topBar.setJustifyContentMode(JustifyContentMode.END);
+        add(topBar);
+
+        // ✅ Griglia sotto
         configureGrid();
-
-        // carica task dalla memoria
-        grid.setItems(taskService.findAll());
-
+        refreshGrid();
         add(grid);
     }
 
     private void configureGrid() {
-        grid.addColumn(Task::getName).setHeader("Titolo");
+        grid.addComponentColumn(task -> {
+            Span title = new Span(task.getName());
+            title.getElement().setProperty("title", task.getDescription());
+            return title;
+        }).setHeader("Titolo");
+
         grid.addComponentColumn(task -> {
             Span badge = new Span(task.getStatus().toString());
             badge.getElement().getThemeList().add("badge " + getStatusTheme(task.getStatus()));
@@ -49,7 +70,49 @@ public class TaskListView extends VerticalLayout {
         grid.addColumn(Task::getScheduledDate).setHeader("Data programmata");
         grid.addColumn(Task::getDueDate).setHeader("Scadenza");
 
+        grid.addComponentColumn(task -> {
+            Button deleteButton = new Button(new Icon(VaadinIcon.CLOSE_SMALL));
+            deleteButton.getElement().setAttribute("theme", "error tertiary icon");
+            deleteButton.addClickListener(e -> openDeleteDialog(task));
+            return deleteButton;
+        }).setHeader("Elimina");
+
         grid.setSizeFull();
+    }
+
+    private void openDeleteDialog(Task task) {
+        Dialog dialog = new Dialog();
+        dialog.setHeaderTitle("Conferma eliminazione");
+
+        dialog.add("Vuoi eliminare il task \"" + task.getName() + "\"?");
+
+        Button confirm = new Button("Elimina", e -> {
+            taskService.delete(task);
+            dialog.close();
+            refreshGrid();
+        });
+
+        Button cancel = new Button("Annulla", e -> dialog.close());
+
+        dialog.getFooter().add(cancel, confirm);
+        dialog.open();
+    }
+
+    private void openAddDialog() {
+        Dialog dialog = new Dialog();
+        dialog.setHeaderTitle("Nuovo Task");
+
+        TaskFormEditor editor = new TaskFormEditor(taskService, () -> {
+            dialog.close();
+            refreshGrid();
+        });
+
+        dialog.add(editor);
+        dialog.open();
+    }
+
+    private void refreshGrid() {
+        grid.setItems(taskService.findAll());
     }
 
     private String getStatusTheme(Task.Status status) {
@@ -68,5 +131,4 @@ public class TaskListView extends VerticalLayout {
             case BASSA -> "success";
         };
     }
-
 }

@@ -53,4 +53,10 @@ public class TaskService {
         }
         System.out.println("Salvato: " + task.getName());
     }
+
+    public void delete(Task task) {
+        tasks.removeIf(t -> t.getId().equals(task.getId()));
+        System.out.println("Eliminato: " + task.getName());
+    }
+
 }
