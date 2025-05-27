@@ -124,11 +124,22 @@ public class TaskListView extends VerticalLayout implements BeforeEnterObserver 
         grid.addColumn(Task::getDueDate).setHeader("Scadenza").setSortable(true);
 
         grid.addComponentColumn(task -> {
+            HorizontalLayout actions = new HorizontalLayout();
+            actions.setSpacing(true);
+
+            // Pulsante modifica
+            Button editButton = new Button(new Icon(VaadinIcon.EDIT));
+            editButton.getElement().setAttribute("theme", "tertiary icon");
+            editButton.addClickListener(e -> openEditDialog(task));
+
+            // Pulsante elimina
             Button deleteButton = new Button(new Icon(VaadinIcon.CLOSE_SMALL));
             deleteButton.getElement().setAttribute("theme", "error tertiary icon");
             deleteButton.addClickListener(e -> openDeleteDialog(task));
-            return deleteButton;
-        }).setHeader("Elimina");
+
+            actions.add(editButton, deleteButton);
+            return actions;
+        }).setHeader("Azioni");
 
         grid.setSizeFull();
     }
@@ -148,6 +159,20 @@ public class TaskListView extends VerticalLayout implements BeforeEnterObserver 
         Button cancel = new Button("Annulla", e -> dialog.close());
 
         dialog.getFooter().add(cancel, confirm);
+        dialog.open();
+    }
+
+    private void openEditDialog(Task task) {
+        Dialog dialog = new Dialog();
+        dialog.setHeaderTitle("Modifica Task");
+
+        TaskFormEditor editor = new TaskFormEditor(taskService, () -> {
+            dialog.close();
+            refreshGrid(titleFilter.getValue(), statusFilter.getValue(), priorityFilter.getValue());
+        });
+
+        editor.setTask(task); // Precarica i dati
+        dialog.add(editor);
         dialog.open();
     }
 
