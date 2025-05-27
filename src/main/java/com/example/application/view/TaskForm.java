@@ -8,6 +8,11 @@ import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
+import com.vaadin.flow.data.binder.ValidationException;
+import com.vaadin.flow.data.binder.Validator;
+import com.vaadin.flow.data.validator.StringLengthValidator;
+
+import java.time.LocalDate;
 
 public class TaskForm extends FormLayout {
 
@@ -25,16 +30,40 @@ public class TaskForm extends FormLayout {
         status.setItems(Task.Status.values());
         priority.setItems(Task.Priority.values());
 
-        setResponsiveSteps(
-                new ResponsiveStep("0", 1));
-
+        setResponsiveSteps(new ResponsiveStep("0", 1));
         add(name, description, status, priority, scheduledDate, dueDate, save);
 
-        // 🔧 Collega tutti i campi al binder (usa i nomi delle proprietà di Task)
-        binder.bindInstanceFields(this);
+        // VALIDAZIONI
+        binder.forField(name)
+                .asRequired("Il titolo è obbligatorio")
+                .withValidator(new StringLengthValidator("Minimo 3 caratteri", 3, null))
+                .bind(Task::getName, Task::setName);
+
+        binder.forField(description)
+                .withValidator(desc -> desc == null || desc.length() <= 200, "Massimo 200 caratteri")
+                .bind(Task::getDescription, Task::setDescription);
+
+        binder.forField(status)
+                .asRequired("Seleziona uno stato")
+                .bind(Task::getStatus, Task::setStatus);
+
+        binder.forField(priority)
+                .asRequired("Seleziona una priorità")
+                .bind(Task::getPriority, Task::setPriority);
+
+        binder.forField(scheduledDate)
+                // .asRequired("Data programmata obbligatoria")
+                .bind(Task::getScheduledDate, Task::setScheduledDate);
+
+        binder.forField(dueDate)
+                // .asRequired("Data scadenza obbligatoria")
+                .withValidator(due -> {
+                    LocalDate sched = scheduledDate.getValue();
+                    return sched == null || !due.isBefore(sched);
+                }, "La scadenza non può essere prima della data programmata")
+                .bind(Task::getDueDate, Task::setDueDate);
     }
 
-    // ✅ Corretta
     public void setTask(Task task) {
         binder.setBean(task);
     }
@@ -46,11 +75,11 @@ public class TaskForm extends FormLayout {
     public Task getCurrentTask() {
         Task bean = binder.getBean();
         try {
-            binder.writeBean(bean); // <-- questo scrive i dati del form dentro l'oggetto
-        } catch (Exception e) {
+            binder.writeBean(bean);
+        } catch (ValidationException e) {
             e.printStackTrace();
+            return null;
         }
         return bean;
     }
-
 }

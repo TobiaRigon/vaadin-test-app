@@ -22,7 +22,21 @@ public class Task {
     private LocalDate dueDate;
 
     public enum Status {
-        DA_FARE, PROGRAMMATO, STANDBY, FATTO
+        DA_FARE("Da fare"),
+        PROGRAMMATO("Programmato"),
+        STANDBY("Standby"),
+        FATTO("Fatto");
+
+        private final String label;
+
+        Status(String label) {
+            this.label = label;
+        }
+
+        @Override
+        public String toString() {
+            return label;
+        }
     }
 
     public enum Priority {

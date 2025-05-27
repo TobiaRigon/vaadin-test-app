@@ -24,8 +24,8 @@ public class TaskFormView extends VerticalLayout {
                 .description("")
                 .status(Task.Status.DA_FARE)
                 .priority(Task.Priority.ALTA)
-                .scheduledDate(LocalDate.now().plusDays(1))
-                .dueDate(LocalDate.now().plusDays(3))
+                .scheduledDate(null)
+                .dueDate(null)
                 .creationDate(LocalDate.now())
                 .build();
 
