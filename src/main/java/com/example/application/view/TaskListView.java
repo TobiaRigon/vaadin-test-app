@@ -20,18 +20,19 @@ import com.vaadin.flow.spring.annotation.UIScope;
 import jakarta.annotation.PostConstruct;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import java.util.Map;
-import java.util.HashMap;
 
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.FlexComponent.JustifyContentMode;
 import com.vaadin.flow.router.BeforeEnterObserver;
+
+import com.vaadin.flow.component.grid.ColumnTextAlign;
 
 //@Component
 @Route(value = "task-list", layout = MainLayout.class)
@@ -124,15 +125,20 @@ public class TaskListView extends VerticalLayout implements BeforeEnterObserver 
             });
 
             return checkbox;
-        }).setHeader("✔");
+        }).setHeader("✔")
+                .setWidth("60px")
+                .setFlexGrow(0)
+                .setTextAlign(ColumnTextAlign.START);
+        ;
 
         grid.addComponentColumn(task -> {
             Span title = new Span(task.getName());
             title.getElement().setProperty("title", task.getDescription());
+            title.getStyle().set("cursor", "pointer");
+            title.addClickListener(e -> openTitleDialog(task));
             return title;
         })
                 .setComparator((t1, t2) -> t1.getName().compareToIgnoreCase(t2.getName()))
-                // <-- fix critico!
                 .setHeader("Titolo")
                 .setSortable(true);
 
@@ -140,9 +146,11 @@ public class TaskListView extends VerticalLayout implements BeforeEnterObserver 
         grid.addComponentColumn(task -> {
             Span badge = new Span(task.getStatus().toString());
             badge.getElement().getThemeList().add("badge " + getStatusTheme(task.getStatus()));
+            badge.getStyle().set("cursor", "pointer");
+            badge.addClickListener(e -> openStatusDialog(task));
             return badge;
         })
-                .setComparator(task -> task.getStatus().ordinal()) // ordina per enum ordinal
+                .setComparator(task -> task.getStatus().ordinal())
                 .setHeader("Stato")
                 .setSortable(true);
 
@@ -150,34 +158,173 @@ public class TaskListView extends VerticalLayout implements BeforeEnterObserver 
         grid.addComponentColumn(task -> {
             Span badge = new Span(task.getPriority().toString());
             badge.getElement().getThemeList().add("badge " + getPriorityTheme(task.getPriority()));
+            badge.getStyle().set("cursor", "pointer");
+            badge.addClickListener(e -> openPriorityDialog(task));
             return badge;
         })
-                .setComparator(task -> task.getPriority().ordinal()) // ordina per enum ordinal
+                .setComparator(task -> task.getPriority().ordinal())
                 .setHeader("Priorità")
                 .setSortable(true);
 
-        grid.addColumn(Task::getScheduledDate).setHeader("Data programmata").setSortable(true);
-        grid.addColumn(Task::getDueDate).setHeader("Scadenza").setSortable(true);
+        grid.addComponentColumn(task -> {
+            Span scheduledSpan = new Span(task.getScheduledDate() != null ? task.getScheduledDate().toString() : "—");
+            scheduledSpan.getStyle().set("cursor", "pointer");
+            scheduledSpan.addClickListener(e -> openScheduledDateDialog(task));
+            return scheduledSpan;
+        }).setHeader("Data programmata").setSortable(true);
 
         grid.addComponentColumn(task -> {
-            HorizontalLayout actions = new HorizontalLayout();
-            actions.setSpacing(true);
+            Span dueDateSpan = new Span(task.getDueDate() != null ? task.getDueDate().toString() : "—");
+            dueDateSpan.getStyle().set("cursor", "pointer");
+            dueDateSpan.addClickListener(e -> openDueDateDialog(task));
+            return dueDateSpan;
+        }).setHeader("Scadenza").setSortable(true);
+
+        grid.addComponentColumn(task -> {
+            // HorizontalLayout actions = new HorizontalLayout();
+            // actions.setSpacing(true);
 
             // Pulsante modifica
-            Button editButton = new Button(new Icon(VaadinIcon.EDIT));
-            editButton.getElement().setAttribute("theme", "tertiary icon");
-            editButton.addClickListener(e -> openEditDialog(task));
+            // Button editButton = new Button(new Icon(VaadinIcon.EDIT));
+            // editButton.getElement().setAttribute("theme", "tertiary icon");
+            // editButton.addClickListener(e -> openEditDialog(task));
 
             // Pulsante elimina
             Button deleteButton = new Button(new Icon(VaadinIcon.CLOSE_SMALL));
             deleteButton.getElement().setAttribute("theme", "error tertiary icon");
             deleteButton.addClickListener(e -> openDeleteDialog(task));
 
-            actions.add(editButton, deleteButton);
-            return actions;
-        }).setHeader("Azioni");
+            // actions.add(deleteButton);
+            return deleteButton;
+        }).setHeader("Elimina")
+                .setWidth("120px")
+                .setFlexGrow(0)
+                .setTextAlign(ColumnTextAlign.END);
 
         grid.setSizeFull();
+    }
+
+    private void openTitleDialog(Task task) {
+        Dialog dialog = new Dialog();
+        dialog.setHeaderTitle("Modifica Titolo e Descrizione");
+
+        TextField nameField = new TextField("Titolo");
+        nameField.setWidthFull();
+        nameField.setValue(task.getName() != null ? task.getName() : "");
+
+        com.vaadin.flow.component.textfield.TextArea descriptionArea = new com.vaadin.flow.component.textfield.TextArea(
+                "Descrizione");
+        descriptionArea.setWidthFull();
+        descriptionArea.setHeight("150px");
+        descriptionArea.setValue(task.getDescription() != null ? task.getDescription() : "");
+
+        Button save = new Button("Salva", e -> {
+            task.setName(nameField.getValue());
+            task.setDescription(descriptionArea.getValue());
+            taskService.save(task);
+            dialog.close();
+            refreshGrid(titleFilter.getValue(), statusFilter.getValue(), priorityFilter.getValue());
+        });
+
+        Button cancel = new Button("Annulla", e -> dialog.close());
+
+        HorizontalLayout buttons = new HorizontalLayout(cancel, save);
+        buttons.setJustifyContentMode(JustifyContentMode.END);
+        buttons.setWidthFull();
+
+        VerticalLayout layout = new VerticalLayout(nameField, descriptionArea, buttons);
+        layout.setPadding(false);
+        layout.setSpacing(true);
+
+        dialog.add(layout);
+        dialog.setWidth("400px");
+        dialog.open();
+    }
+
+    private void openStatusDialog(Task task) {
+        Dialog dialog = new Dialog();
+        dialog.setHeaderTitle("Modifica Stato");
+
+        ComboBox<Task.Status> statusBox = new ComboBox<>("Seleziona stato");
+        statusBox.setItems(Task.Status.values());
+        statusBox.setValue(task.getStatus());
+
+        Button save = new Button("Salva", e -> {
+            task.setStatus(statusBox.getValue());
+            taskService.save(task);
+            dialog.close();
+            refreshGrid(titleFilter.getValue(), statusFilter.getValue(), priorityFilter.getValue());
+        });
+
+        Button cancel = new Button("Annulla", e -> dialog.close());
+
+        HorizontalLayout buttons = new HorizontalLayout(cancel, save);
+        dialog.add(statusBox, buttons);
+        dialog.open();
+    }
+
+    private void openPriorityDialog(Task task) {
+        Dialog dialog = new Dialog();
+        dialog.setHeaderTitle("Modifica Priorità");
+
+        ComboBox<Task.Priority> priorityBox = new ComboBox<>("Seleziona priorità");
+        priorityBox.setItems(Task.Priority.values());
+        priorityBox.setValue(task.getPriority());
+
+        Button save = new Button("Salva", e -> {
+            task.setPriority(priorityBox.getValue());
+            taskService.save(task);
+            dialog.close();
+            refreshGrid(titleFilter.getValue(), statusFilter.getValue(), priorityFilter.getValue());
+        });
+
+        Button cancel = new Button("Annulla", e -> dialog.close());
+
+        HorizontalLayout buttons = new HorizontalLayout(cancel, save);
+        dialog.add(priorityBox, buttons);
+        dialog.open();
+    }
+
+    private void openScheduledDateDialog(Task task) {
+        Dialog dialog = new Dialog();
+        dialog.setHeaderTitle("Modifica Data Programmata");
+
+        DatePicker datePicker = new DatePicker("Nuova data programmata");
+        datePicker.setValue(task.getScheduledDate());
+
+        Button save = new Button("Salva", e -> {
+            task.setScheduledDate(datePicker.getValue());
+            taskService.save(task);
+            dialog.close();
+            refreshGrid(titleFilter.getValue(), statusFilter.getValue(), priorityFilter.getValue());
+        });
+
+        Button cancel = new Button("Annulla", e -> dialog.close());
+
+        HorizontalLayout buttons = new HorizontalLayout(cancel, save);
+        dialog.add(datePicker, buttons);
+        dialog.open();
+    }
+
+    private void openDueDateDialog(Task task) {
+        Dialog dialog = new Dialog();
+        dialog.setHeaderTitle("Modifica Scadenza");
+
+        DatePicker datePicker = new DatePicker("Nuova data di scadenza");
+        datePicker.setValue(task.getDueDate());
+
+        Button save = new Button("Salva", e -> {
+            task.setDueDate(datePicker.getValue());
+            taskService.save(task);
+            dialog.close();
+            refreshGrid(titleFilter.getValue(), statusFilter.getValue(), priorityFilter.getValue());
+        });
+
+        Button cancel = new Button("Annulla", e -> dialog.close());
+
+        HorizontalLayout buttons = new HorizontalLayout(cancel, save);
+        dialog.add(datePicker, buttons);
+        dialog.open();
     }
 
     private void openDeleteDialog(Task task) {
@@ -198,19 +345,20 @@ public class TaskListView extends VerticalLayout implements BeforeEnterObserver 
         dialog.open();
     }
 
-    private void openEditDialog(Task task) {
-        Dialog dialog = new Dialog();
-        dialog.setHeaderTitle("Modifica Task");
+    // private void openEditDialog(Task task) {
+    // Dialog dialog = new Dialog();
+    // dialog.setHeaderTitle("Modifica Task");
 
-        TaskFormEditor editor = new TaskFormEditor(taskService, () -> {
-            dialog.close();
-            refreshGrid(titleFilter.getValue(), statusFilter.getValue(), priorityFilter.getValue());
-        });
+    // TaskFormEditor editor = new TaskFormEditor(taskService, () -> {
+    // dialog.close();
+    // refreshGrid(titleFilter.getValue(), statusFilter.getValue(),
+    // priorityFilter.getValue());
+    // });
 
-        editor.setTask(task); // Precarica i dati
-        dialog.add(editor);
-        dialog.open();
-    }
+    // editor.setTask(task); // Precarica i dati
+    // dialog.add(editor);
+    // dialog.open();
+    // }
 
     private void openAddDialog() {
         Dialog dialog = new Dialog();

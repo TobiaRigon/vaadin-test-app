@@ -19,7 +19,7 @@ public class MainLayout extends AppLayout {
     }
 
     private void createHeader() {
-        H1 logo = new H1("Task Tracker");
+        H1 logo = new H1("✔ Task Tracker");
         logo.getStyle().set("font-size", "var(--lumo-font-size-l)").set("margin", "0");
 
         // 🔧 Aggiungi il pulsante per aprire/chiudere il drawer
