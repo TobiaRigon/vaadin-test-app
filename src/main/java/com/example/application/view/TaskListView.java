@@ -5,6 +5,7 @@ import com.example.application.service.TaskService;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
@@ -30,12 +31,16 @@ import com.vaadin.flow.router.BeforeEnterObserver;
 
 public class TaskListView extends VerticalLayout implements BeforeEnterObserver {
 
+    private final TextField titleFilter = new TextField();
+    private final ComboBox<Task.Status> statusFilter = new ComboBox<>();
+    private final ComboBox<Task.Priority> priorityFilter = new ComboBox<>();
+
     private final Grid<Task> grid = new Grid<>(Task.class, false);
     private final TaskService taskService;
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
-        refreshGrid(); // viene chiamato ogni volta che entri nella vista
+        refreshGrid(titleFilter.getValue(), statusFilter.getValue(), priorityFilter.getValue());
     }
 
     @Autowired
@@ -44,19 +49,19 @@ public class TaskListView extends VerticalLayout implements BeforeEnterObserver 
         setSizeFull();
 
         // Filtro per titolo
-        TextField titleFilter = new TextField();
         titleFilter.setPlaceholder("Filtra per titolo");
         titleFilter.setClearButtonVisible(true);
+        titleFilter.setValueChangeMode(ValueChangeMode.EAGER);
 
         // Filtro per stato
-        ComboBox<Task.Status> statusFilter = new ComboBox<>();
         statusFilter.setItems(Task.Status.values());
         statusFilter.setPlaceholder("Stato");
+        statusFilter.setClearButtonVisible(true);
 
         // Filtro per priorità
-        ComboBox<Task.Priority> priorityFilter = new ComboBox<>();
         priorityFilter.setItems(Task.Priority.values());
         priorityFilter.setPlaceholder("Priorità");
+        priorityFilter.setClearButtonVisible(true);
 
         // Pulsante "+"
         Button addButton = new Button(new Icon(VaadinIcon.PLUS));
@@ -79,7 +84,8 @@ public class TaskListView extends VerticalLayout implements BeforeEnterObserver 
 
         // ✅ Griglia sotto
         configureGrid();
-        refreshGrid();
+        refreshGrid(titleFilter.getValue(), statusFilter.getValue(), priorityFilter.getValue());
+
         add(grid);
     }
 
@@ -89,7 +95,8 @@ public class TaskListView extends VerticalLayout implements BeforeEnterObserver 
             title.getElement().setProperty("title", task.getDescription());
             return title;
         })
-                .setComparator(Task::getName) // <-- fix critico!
+                .setComparator((t1, t2) -> t1.getName().compareToIgnoreCase(t2.getName()))
+                // <-- fix critico!
                 .setHeader("Titolo")
                 .setSortable(true);
 
@@ -135,7 +142,7 @@ public class TaskListView extends VerticalLayout implements BeforeEnterObserver 
         Button confirm = new Button("Elimina", e -> {
             taskService.delete(task);
             dialog.close();
-            refreshGrid();
+            refreshGrid(titleFilter.getValue(), statusFilter.getValue(), priorityFilter.getValue());
         });
 
         Button cancel = new Button("Annulla", e -> dialog.close());
@@ -150,15 +157,11 @@ public class TaskListView extends VerticalLayout implements BeforeEnterObserver 
 
         TaskFormEditor editor = new TaskFormEditor(taskService, () -> {
             dialog.close();
-            refreshGrid();
+            refreshGrid(titleFilter.getValue(), statusFilter.getValue(), priorityFilter.getValue());
         });
 
         dialog.add(editor);
         dialog.open();
-    }
-
-    private void refreshGrid() {
-        grid.setItems(taskService.findAll());
     }
 
     private void refreshGrid(String title, Task.Status status, Task.Priority priority) {
