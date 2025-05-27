@@ -46,12 +46,20 @@ public class TaskListView extends VerticalLayout implements BeforeEnterObserver 
     private final ComboBox<Task.Status> statusFilter = new ComboBox<>();
     private final ComboBox<Task.Priority> priorityFilter = new ComboBox<>();
 
+    // Filtro per date
+    private final DatePicker createdFrom = new DatePicker("Creazione da");
+    private final DatePicker createdTo = new DatePicker("a");
+    private final DatePicker scheduledFrom = new DatePicker("Programmata da");
+    private final DatePicker scheduledTo = new DatePicker("a");
+    private final DatePicker dueFrom = new DatePicker("Scadenza da");
+    private final DatePicker dueTo = new DatePicker("a");
+
     private final Grid<Task> grid = new Grid<>(Task.class, false);
     private final TaskService taskService;
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
-        refreshGrid(titleFilter.getValue(), statusFilter.getValue(), priorityFilter.getValue());
+        refreshGrid();
     }
 
     @Autowired
@@ -79,6 +87,15 @@ public class TaskListView extends VerticalLayout implements BeforeEnterObserver 
         addButton.getElement().setAttribute("theme", "primary icon");
         addButton.addClickListener(e -> openAddDialog());
 
+        // Layout Filtri Data
+        HorizontalLayout dateFilters = new HorizontalLayout(
+                createdFrom, createdTo,
+                scheduledFrom, scheduledTo,
+                dueFrom, dueTo);
+        dateFilters.setWidthFull();
+        dateFilters.setAlignItems(Alignment.END);
+        add(dateFilters);
+
         // Layout filtri + bottone
         HorizontalLayout filterBar = new HorizontalLayout(titleFilter, statusFilter, priorityFilter, addButton);
         filterBar.setWidthFull();
@@ -87,15 +104,24 @@ public class TaskListView extends VerticalLayout implements BeforeEnterObserver 
 
         // Listener per filtrare
         titleFilter.addValueChangeListener(
-                e -> refreshGrid(titleFilter.getValue(), statusFilter.getValue(), priorityFilter.getValue()));
+                e -> refreshGrid());
+
         statusFilter.addValueChangeListener(
-                e -> refreshGrid(titleFilter.getValue(), statusFilter.getValue(), priorityFilter.getValue()));
+                e -> refreshGrid());
+
         priorityFilter.addValueChangeListener(
-                e -> refreshGrid(titleFilter.getValue(), statusFilter.getValue(), priorityFilter.getValue()));
+                e -> refreshGrid());
+
+        createdFrom.addValueChangeListener(e -> refreshGrid());
+        createdTo.addValueChangeListener(e -> refreshGrid());
+        scheduledFrom.addValueChangeListener(e -> refreshGrid());
+        scheduledTo.addValueChangeListener(e -> refreshGrid());
+        dueFrom.addValueChangeListener(e -> refreshGrid());
+        dueTo.addValueChangeListener(e -> refreshGrid());
 
         // ✅ Griglia sotto
         configureGrid();
-        refreshGrid(titleFilter.getValue(), statusFilter.getValue(), priorityFilter.getValue());
+        refreshGrid();
 
         add(grid);
     }
@@ -121,7 +147,8 @@ public class TaskListView extends VerticalLayout implements BeforeEnterObserver 
                 }
 
                 taskService.save(task);
-                refreshGrid(titleFilter.getValue(), statusFilter.getValue(), priorityFilter.getValue());
+                refreshGrid();
+
             });
 
             return checkbox;
@@ -164,6 +191,10 @@ public class TaskListView extends VerticalLayout implements BeforeEnterObserver 
         })
                 .setComparator(task -> task.getPriority().ordinal())
                 .setHeader("Priorità")
+                .setSortable(true);
+
+        grid.addColumn(Task::getCreationDate)
+                .setHeader("Creazione")
                 .setSortable(true);
 
         grid.addComponentColumn(task -> {
@@ -223,7 +254,8 @@ public class TaskListView extends VerticalLayout implements BeforeEnterObserver 
             task.setDescription(descriptionArea.getValue());
             taskService.save(task);
             dialog.close();
-            refreshGrid(titleFilter.getValue(), statusFilter.getValue(), priorityFilter.getValue());
+            refreshGrid();
+
         });
 
         Button cancel = new Button("Annulla", e -> dialog.close());
@@ -253,7 +285,8 @@ public class TaskListView extends VerticalLayout implements BeforeEnterObserver 
             task.setStatus(statusBox.getValue());
             taskService.save(task);
             dialog.close();
-            refreshGrid(titleFilter.getValue(), statusFilter.getValue(), priorityFilter.getValue());
+            refreshGrid();
+
         });
 
         Button cancel = new Button("Annulla", e -> dialog.close());
@@ -275,7 +308,8 @@ public class TaskListView extends VerticalLayout implements BeforeEnterObserver 
             task.setPriority(priorityBox.getValue());
             taskService.save(task);
             dialog.close();
-            refreshGrid(titleFilter.getValue(), statusFilter.getValue(), priorityFilter.getValue());
+            refreshGrid();
+
         });
 
         Button cancel = new Button("Annulla", e -> dialog.close());
@@ -296,7 +330,8 @@ public class TaskListView extends VerticalLayout implements BeforeEnterObserver 
             task.setScheduledDate(datePicker.getValue());
             taskService.save(task);
             dialog.close();
-            refreshGrid(titleFilter.getValue(), statusFilter.getValue(), priorityFilter.getValue());
+            refreshGrid();
+
         });
 
         Button cancel = new Button("Annulla", e -> dialog.close());
@@ -317,7 +352,8 @@ public class TaskListView extends VerticalLayout implements BeforeEnterObserver 
             task.setDueDate(datePicker.getValue());
             taskService.save(task);
             dialog.close();
-            refreshGrid(titleFilter.getValue(), statusFilter.getValue(), priorityFilter.getValue());
+            refreshGrid();
+
         });
 
         Button cancel = new Button("Annulla", e -> dialog.close());
@@ -336,7 +372,8 @@ public class TaskListView extends VerticalLayout implements BeforeEnterObserver 
         Button confirm = new Button("Elimina", e -> {
             taskService.delete(task);
             dialog.close();
-            refreshGrid(titleFilter.getValue(), statusFilter.getValue(), priorityFilter.getValue());
+            refreshGrid();
+
         });
 
         Button cancel = new Button("Annulla", e -> dialog.close());
@@ -366,20 +403,34 @@ public class TaskListView extends VerticalLayout implements BeforeEnterObserver 
 
         TaskFormEditor editor = new TaskFormEditor(taskService, () -> {
             dialog.close();
-            refreshGrid(titleFilter.getValue(), statusFilter.getValue(), priorityFilter.getValue());
+            refreshGrid();
+
         });
 
         dialog.add(editor);
         dialog.open();
     }
 
-    private void refreshGrid(String title, Task.Status status, Task.Priority priority) {
+    private void refreshGrid() {
         grid.setItems(
                 taskService.findAll().stream()
-                        .filter(task -> title == null || title.isEmpty()
-                                || task.getName().toLowerCase().contains(title.toLowerCase()))
-                        .filter(task -> status == null || task.getStatus() == status)
-                        .filter(task -> priority == null || task.getPriority() == priority)
+                        .filter(task -> titleFilter.getValue() == null || titleFilter.getValue().isEmpty()
+                                || task.getName().toLowerCase().contains(titleFilter.getValue().toLowerCase()))
+                        .filter(task -> statusFilter.getValue() == null || task.getStatus() == statusFilter.getValue())
+                        .filter(task -> priorityFilter.getValue() == null
+                                || task.getPriority() == priorityFilter.getValue())
+                        .filter(task -> createdFrom.getValue() == null
+                                || !task.getCreationDate().isBefore(createdFrom.getValue()))
+                        .filter(task -> createdTo.getValue() == null
+                                || !task.getCreationDate().isAfter(createdTo.getValue()))
+                        .filter(task -> scheduledFrom.getValue() == null || (task.getScheduledDate() != null
+                                && !task.getScheduledDate().isBefore(scheduledFrom.getValue())))
+                        .filter(task -> scheduledTo.getValue() == null || (task.getScheduledDate() != null
+                                && !task.getScheduledDate().isAfter(scheduledTo.getValue())))
+                        .filter(task -> dueFrom.getValue() == null
+                                || (task.getDueDate() != null && !task.getDueDate().isBefore(dueFrom.getValue())))
+                        .filter(task -> dueTo.getValue() == null
+                                || (task.getDueDate() != null && !task.getDueDate().isAfter(dueTo.getValue())))
                         .toList());
     }
 
